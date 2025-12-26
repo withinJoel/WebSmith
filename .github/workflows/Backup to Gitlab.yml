@@ -1,0 +1,73 @@
+name: Backup to GitLab
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute repo name (lowercase)
+        run: |
+          REPO_NAME=$(echo "${GITHUB_REPOSITORY#*/}" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+
+      - name: Fetch GitLab token from KeyManagement
+        run: |
+          TS=$(date +%s%3N)
+          TOKEN=$(curl -s -X POST https://keymanagement.joeljollyhere.workers.dev \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"accessKey\": \"${{ secrets.ACCESS_KEY }}\",
+              \"key\": \"gitlab\",
+              \"ts\": $TS
+            }")
+
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to fetch GitLab token"
+            exit 1
+          fi
+
+          echo "GITLAB_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      # 🔥 NEW STEP — create repo if it does not exist
+      - name: Ensure GitLab repo exists
+        run: |
+          PROJECT_PATH="withinjoel/${REPO_NAME}"
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+            "https://gitlab.com/api/v4/projects/$(echo $PROJECT_PATH | sed 's/\//%2F/g')")
+
+          if [ "$STATUS" = "404" ]; then
+            echo "GitLab repo does not exist. Creating..."
+            curl -s -X POST "https://gitlab.com/api/v4/projects" \
+              -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"name\": \"${REPO_NAME}\",
+                \"path\": \"${REPO_NAME}\",
+                \"namespace_id\": $(curl -s -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" https://gitlab.com/api/v4/user | jq '.id'),
+                \"visibility\": \"private\"
+              }"
+          else
+            echo "GitLab repo already exists."
+          fi
+
+      - name: Push to GitLab
+        run: |
+          git config --global user.name "GitHub Backup Bot"
+          git config --global user.email "bot@example.com"
+
+          git remote add gitlab \
+            https://oauth2:${GITLAB_TOKEN}@gitlab.com/withinjoel/${REPO_NAME}.git
+
+          git push gitlab main --force
