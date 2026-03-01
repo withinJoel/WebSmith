@@ -1,5 +1,5 @@
-// WebSmith.js
-// Made with Love by Joel Jolly.
+//WebSmith.js
+//Made with Love by Joel Jolly.
 
 // Capture the <script> tag that loaded WebSmith.js
 const websmithScriptTag = document.currentScript;
@@ -13,24 +13,12 @@ function createScript(src, callback) {
 }
 
 // Step 1: Load Head.js
-createScript(
-    "https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@main/Head/Head.js",
-    () => {
-        // Step 2: Load user's script
-        const userScriptPath = websmithScriptTag.getAttribute("data-websmith");
-
-        if (userScriptPath) {
-            createScript(userScriptPath, () => {
-                // ✅ Step 3: Load vercel.js
-                createScript(
-                    "https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@main/Vercel/Vercel.js"
-                );
-            });
-        } else {
-            // fallback if no user script
-            createScript(
-                "https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@main/Vercel/Vercel.js"
-            );
-        }
+createScript("https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@main/Head/Head.js", () => {
+    // Step 2: After Head.js, load user's script
+    const userScriptPath = websmithScriptTag.getAttribute("data-websmith");
+    if (userScriptPath) {
+        createScript(userScriptPath);
     }
-);
+});
+
+createScript("https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@main/Vercel/Vercel.js");
