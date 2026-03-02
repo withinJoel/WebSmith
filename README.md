@@ -19,14 +19,16 @@
 * Just drop one script in your HTML:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@main/main.js" 
-        data-websmith="your-app.js"></script>
+<script src="your-app.js"></script>
 ```
 
 ## 🧠 Usage
 * In your your-app.js:
 * Note: Any field is optional — WebSmith automatically fills defaults.
 ```
+// WebSmith Version
+const WEB_SMITH_VERSION = "v2.0.2";
+
 Head({
     appName: "My Cool App",
     appDescription: "A simple demo using WebSmith",
@@ -38,6 +40,18 @@ Head({
     appScript: "/assets/app.js",
     appManifest: "/manifest.json"
 });
+
+// Utils
+function createScriptElement(srcElement, onload) {
+    const script = document.createElement("script");
+    script.src = srcElement;
+    if (onload) script.onload = onload;
+    document.head.appendChild(script);
+}
+
+// Script Loader
+createScriptElement(`https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@${WEB_SMITH_VERSION}/Head/Head.js`, () => Head(headConfig));
+createScriptElement(`https://cdn.jsdelivr.net/gh/withinjoel/WebSmith@${WEB_SMITH_VERSION}/Vercel/Vercel.js`);
 ```
 # 🤝 Contributing
 * Want to improve WebSmith? PRs are welcome!
